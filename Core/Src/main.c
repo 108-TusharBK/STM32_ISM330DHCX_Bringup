@@ -48,7 +48,6 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-stmdev_ctx_t dev_ctx;
 
 uint8_t whoamI;
 
@@ -61,15 +60,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static int32_t platform_write(void *handle,
-                              uint8_t reg,
-                              const uint8_t *bufp,
-                              uint16_t len);
 
-static int32_t platform_read(void *handle,
-                             uint8_t reg,
-                             uint8_t *bufp,
-                             uint16_t len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -109,37 +100,8 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  /* uint8_t regs[] = {0x0F, 0x10, 0x11, 0x12, 0x13};
-  uint8_t value;
-
-  for (int i = 0; i < 5; i++)
-  {
-      HAL_StatusTypeDef status = HAL_I2C_Mem_Read(
-          &hi2c1,
-          (0x6B << 1),
-          regs[i],
-          I2C_MEMADD_SIZE_8BIT,
-          &value,
-          1,
-          1000);
-
-      sprintf(uart_buf,
-              "Reg 0x%02X  Status=%d  Value=0x%02X  Err=0x%08lX\r\n",
-              regs[i],
-              status,
-              value,
-              HAL_I2C_GetError(&hi2c1));
-
-      HAL_UART_Transmit(&huart2,
-                        (uint8_t *)uart_buf,
-                        strlen(uart_buf),
-                        HAL_MAX_DELAY);
-  } */
-
   stmdev_ctx_t dev_ctx;
 
-  dev_ctx.write_reg = platform_write;
-  dev_ctx.read_reg  = platform_read;
   dev_ctx.handle    = &hi2c1;
 
   int32_t ret;
@@ -375,45 +337,8 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-#define ISM330DHCX_I2C_ADDR (0x6B << 1)
 
-static int32_t platform_write(void *handle,
-                              uint8_t reg,
-                              const uint8_t *bufp,
-                              uint16_t len)
-{
-    HAL_StatusTypeDef status;
 
-    status = HAL_I2C_Mem_Write(
-                    &hi2c1,
-                    ISM330DHCX_I2C_ADDR,
-                    reg,
-                    I2C_MEMADD_SIZE_8BIT,
-                    (uint8_t *)bufp,
-                    len,
-                    HAL_MAX_DELAY);
-
-    return (status == HAL_OK) ? 0 : -1;
-}
-
-static int32_t platform_read(void *handle,
-                             uint8_t reg,
-                             uint8_t *bufp,
-                             uint16_t len)
-{
-    if (HAL_I2C_Mem_Read((I2C_HandleTypeDef *)handle,
-                         ISM330DHCX_I2C_ADDR,
-                         reg,
-                         I2C_MEMADD_SIZE_8BIT,
-                         bufp,
-                         len,
-                         1000) != HAL_OK)
-    {
-        return -1;
-    }
-
-    return 0;
-}
 /* USER CODE END 4 */
 
 /**
