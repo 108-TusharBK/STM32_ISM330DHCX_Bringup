@@ -24,6 +24,7 @@
 #include "ism330dhcx_reg.h"
 #include <string.h>
 #include <stdio.h>
+#include "imu.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +52,7 @@ UART_HandleTypeDef huart2;
 
 uint8_t whoamI;
 
-char uart_buf[64];
+static char uart_buf[64];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,98 +101,39 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  stmdev_ctx_t dev_ctx;
 
-  dev_ctx.handle    = &hi2c1;
+  float ax;
+  float ay;
+  float az;
 
-  int32_t ret;
-
-  ret = ism330dhcx_block_data_update_set(
-          &dev_ctx,
-          PROPERTY_ENABLE);
-
-  sprintf(uart_buf,
-          "BDU ret = %ld\r\n",
-          ret);
-
-  HAL_UART_Transmit(&huart2,
-                    (uint8_t*)uart_buf,
-                    strlen(uart_buf),
-                    HAL_MAX_DELAY);
-
-  ret = ism330dhcx_xl_data_rate_set(
-          &dev_ctx,
-          ISM330DHCX_XL_ODR_104Hz);
-
-  sprintf(uart_buf,
-          "XL ODR ret = %ld\r\n",
-          ret);
-
-  HAL_UART_Transmit(&huart2,
-                    (uint8_t*)uart_buf,
-                    strlen(uart_buf),
-                    HAL_MAX_DELAY);
-
-  ret = ism330dhcx_xl_full_scale_set(
-          &dev_ctx,
-          ISM330DHCX_2g);
-
-  sprintf(uart_buf,
-          "XL FS ret = %ld\r\n",
-          ret);
-
-  HAL_UART_Transmit(&huart2,
-                    (uint8_t*)uart_buf,
-                    strlen(uart_buf),
-                    HAL_MAX_DELAY);
-
-
-  int16_t acc[3];
-
-  ret = ism330dhcx_acceleration_raw_get(
-          &dev_ctx,
-          acc);
-
-  sprintf(uart_buf,
-          "ACC Read ret = %ld\r\n",
-          ret);
+  if (IMU_Init(&hi2c1) != 0)
+  {
+      Error_Handler();
+  }
 
   HAL_UART_Transmit(&huart2,
                     (uint8_t *)uart_buf,
                     strlen(uart_buf),
                     HAL_MAX_DELAY);
 
-  acc[0] = acc[0];
-  acc[1] = acc[1];
-  acc[2] = acc[2];
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      ret = ism330dhcx_acceleration_raw_get(&dev_ctx, acc);
 
-      sprintf(uart_buf,
-              "X=%6d  Y=%6d  Z=%6d\r\n",
-              acc[0],
-              acc[1],
-              acc[2]);
+	  if (IMU_ReadAccel(&ax, &ay, &az) != 0)
+	  {
+	      Error_Handler();
+	  }
 
-      float ax_g = acc[0] * 0.061f / 1000.0f;
-      float ay_g = acc[1] * 0.061f / 1000.0f;
-      float az_g = acc[2] * 0.061f / 1000.0f;
-
-      sprintf(uart_buf,
-              "X=%7.3f g  Y=%7.3f g  Z=%7.3f g\r\n",
-              ax_g,
-              ay_g,
-              az_g);
-
-      HAL_UART_Transmit(&huart2,
-                        (uint8_t*)uart_buf,
-                        strlen(uart_buf),
-                        HAL_MAX_DELAY);
+	  sprintf(uart_buf,
+	          "X=%7.3f g  Y=%7.3f g  Z=%7.3f g\r\n",
+	          ax,
+	          ay,
+	          az);
 
       HAL_UART_Transmit(&huart2,
                         (uint8_t*)uart_buf,

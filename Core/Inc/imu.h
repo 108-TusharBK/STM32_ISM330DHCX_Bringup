@@ -12,7 +12,7 @@
  * @return 0 on success, non-zero on failure.
  */
 
-int32_t IMU_Init(void);
+int32_t IMU_Init(I2C_HandleTypeDef *hi2c);
 
 int32_t IMU_ReadAccel(float *ax,
                       float *ay,
