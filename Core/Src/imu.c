@@ -1,13 +1,47 @@
+/**
+ * @file imu.c
+ * @brief Implementation of the IMU driver for the ISM330DHCX sensor.
+ *
+ * This module provides functions to initialize the IMU and retrieve
+ * acceleration, angular velocity, and temperature measurements over I2C.
+ */
+
 #include "imu.h"
 
-/* Private Variables */
+/* Private macros */
+/**
+ * @brief Accelerometer sensitivity for ±2 g configuration.
+ *
+ * Units: mg/LSB
+ */
 #define IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB    (0.061f)
+
+/**
+ * @brief Gyroscope sensitivity for ±250 dps configuration.
+ *
+ * Units: mdps/LSB
+ */
 #define IMU_GYRO_SENSITIVITY_250_MDPS_PER_LSB  (8.75f)
 
 #define MG_TO_G     (1000.0f)
 #define MDPS_TO_DPS (1000.0f)
+/**
+ * @brief 8-bit I2C address of the ISM330DHCX.
+ *
+ * The STM32 HAL expects the 7-bit device address left-shifted by one bit.
+ */
+#define ISM330DHCX_I2C_ADDR (0x6B << 1)
 
+
+/* Private Variables */
+/**
+ * @brief ST driver context.
+ */
 static stmdev_ctx_t dev_ctx;
+
+/**
+ * @brief Pointer to the active I2C peripheral.
+ */
 static I2C_HandleTypeDef *imu_i2c;
 
 
@@ -21,8 +55,21 @@ static int32_t platform_read(void *handle,
                              uint8_t *bufp,
                              uint16_t len);
 
-#define ISM330DHCX_I2C_ADDR (0x6B << 1)
 
+
+/**
+ * @brief Writes registers over I2C.
+ *
+ * Callback used by the ST sensor driver.
+ *
+ * @param[in] handle HAL I2C handle.
+ * @param[in] reg Register address.
+ * @param[in] bufp Data buffer.
+ * @param[in] len Number of bytes.
+ *
+ * @retval 0 Success
+ * @retval -1 Communication failure
+ */
 static int32_t platform_write(void *handle,
                               uint8_t reg,
                               const uint8_t *bufp,
@@ -42,6 +89,19 @@ static int32_t platform_write(void *handle,
     return (status == HAL_OK) ? 0 : -1;
 }
 
+/**
+ * @brief Reads registers over I2C.
+ *
+ * Callback used by the ST sensor driver.
+ *
+ * @param[in] handle HAL I2C handle.
+ * @param[in] reg Register address.
+ * @param[in] bufp Data buffer.
+ * @param[in] len Number of bytes.
+ *
+ * @retval 0 Success.
+ * @retval -1 Communication failure.
+ */
 static int32_t platform_read(void *handle,
                              uint8_t reg,
                              uint8_t *bufp,
@@ -61,6 +121,20 @@ static int32_t platform_read(void *handle,
     return 0;
 }
 
+/**
+ * @brief Reads acceleration data from the IMU.
+ *
+ * Reads the latest acceleration measurement from the ISM330DHCX sensor
+ * and converts it to units of g.
+ *
+ * @param[out] ax Pointer to X-axis acceleration in g.
+ * @param[out] ay Pointer to Y-axis acceleration in g.
+ * @param[out] az Pointer to Z-axis acceleration in g.
+ *
+ * @retval 0  Success
+ * @retval -1 Communication error
+ */
+
 int32_t IMU_ReadAccel(float *ax,
                       float *ay,
                       float *az)
@@ -79,6 +153,19 @@ int32_t IMU_ReadAccel(float *ax,
     return 0;
 }
 
+/**
+ * @brief Reads angular velocity measurements from the IMU.
+ *
+ * Reads the latest gyroscope measurement from the ISM330DHCX sensor
+ * and converts it to units of dps.
+ *
+ * @param[out] gx X-axis angular velocity in degrees per second (dps).
+ * @param[out] gy Y-axis angular velocity in degrees per second (dps).
+ * @param[out] gz Z-axis angular velocity in degrees per second (dps).
+ *
+ * @retval 0  Success
+ * @retval -1 Communication error
+ */
 int32_t IMU_ReadGyro(float *gx,
                      float *gy,
                      float *gz)
@@ -96,6 +183,20 @@ int32_t IMU_ReadGyro(float *gx,
 
     return 0;
 }
+
+/**
+ * @brief Initializes the IMU sensor.
+ *
+ * Configures the ISM330DHCX accelerometer and gyroscope with:
+ * - Accelerometer: ±2 g, 104 Hz
+ * - Gyroscope: ±250 dps, 104 Hz
+ * - Block Data Update enabled
+ *
+ * @param[in] hi2c Pointer to the HAL I2C peripheral.
+ *
+ * @retval 0  Initialization successful.
+ * @retval -1 Configuration failed.
+ */
 
 int32_t IMU_Init(I2C_HandleTypeDef *hi2c){
 	imu_i2c = hi2c;
@@ -134,10 +235,28 @@ int32_t IMU_Init(I2C_HandleTypeDef *hi2c){
 	return 0;
 }
 
-
+/**
+ * @brief Reads temperature data from the IMU.
+ *
+ * Reads the latest temperature measurement from the ISM330DHCX sensor
+ * and converts it to degree Celsius.
+ *
+ * @param[out] temperature Pointer to the measured temperature in degrees Celsius (°C).
+ *
+ * @retval 0  Success
+ * @retval -1 Communication error
+ */
 int32_t IMU_ReadTemperature(float *temperature)
 {
-    (void)temperature;
+    int16_t temp;
+
+    if (ism330dhcx_temperature_raw_get(&dev_ctx, &temp) != 0)
+    {
+    	return -1;
+    }
+
+    *temperature = ism330dhcx_from_lsb_to_celsius(temp);
+
 
     return 0;
 }

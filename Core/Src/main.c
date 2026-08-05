@@ -53,6 +53,7 @@ UART_HandleTypeDef huart2;
 uint8_t whoamI;
 
 static char uart_buf[128];
+#define IMU_OK 0
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,6 +105,7 @@ int main(void)
 
   float ax, ay, az;
   float gx, gy, gz;
+  float tmp;
 
   if (IMU_Init(&hi2c1) != 0)
   {
@@ -123,21 +125,27 @@ int main(void)
   while (1)
   {
 
-	  if (IMU_ReadAccel(&ax, &ay, &az) != 0)
+	  if (IMU_ReadAccel(&ax, &ay, &az) != IMU_OK)
 	  {
-	      Error_Handler();
+	      printf("Accel read error!");
 	  }
 
-	  if (IMU_ReadGyro(&gx, &gy, &gz) != 0)
+	  if (IMU_ReadGyro(&gx, &gy, &gz) != IMU_OK)
 	  {
-	      Error_Handler();
+		  printf("Gyro read error!");
+	  }
+
+	  if (IMU_ReadTemperature(&tmp) != IMU_OK)
+	  {
+		  printf("Temp read error!");
 	  }
 
 	  sprintf(uart_buf,
-	          "Acc: X=%7.3f Y=%7.3f Z=%7.3f\r\n"
-	          "Gyr: X=%7.2f Y=%7.2f Z=%7.2f\r\n\r\n",
+	          "ACCL: X=%7.3f Y=%7.3f Z=%7.3f\r\n\r\n"
+	          "GYRO: X=%7.2f Y=%7.2f Z=%7.2f\r\n\r\n"
+			  "TEMP: %.2f\r\n\r\n",
 	          ax, ay, az,
-	          gx, gy, gz);
+	          gx, gy, gz, tmp);
 
       HAL_UART_Transmit(&huart2,
                         (uint8_t*)uart_buf,
