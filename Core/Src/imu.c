@@ -1,9 +1,15 @@
 #include "imu.h"
 
 /* Private Variables */
+#define IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB    (0.061f)
+#define IMU_GYRO_SENSITIVITY_250_MDPS_PER_LSB  (8.75f)
+
+#define MG_TO_G     (1000.0f)
+#define MDPS_TO_DPS (1000.0f)
+
 static stmdev_ctx_t dev_ctx;
 static I2C_HandleTypeDef *imu_i2c;
-#define IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB   (0.061f)
+
 
 static int32_t platform_write(void *handle,
                               uint8_t reg,
@@ -66,18 +72,27 @@ int32_t IMU_ReadAccel(float *ax,
         return -1;
     }
 
-    *ax = raw_acc[0] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / 1000.0f;
-    *ay = raw_acc[1] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / 1000.0f;
-    *az = raw_acc[2] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / 1000.0f;
+    *ax = raw_acc[0] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / MG_TO_G;
+    *ay = raw_acc[1] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / MG_TO_G;
+    *az = raw_acc[2] * IMU_ACCEL_SENSITIVITY_2G_MG_PER_LSB / MG_TO_G;
 
     return 0;
 }
 
-int32_t IMU_ReadGyro(float *gx, float *gy, float *gz)
+int32_t IMU_ReadGyro(float *gx,
+                     float *gy,
+                     float *gz)
 {
-    (void)gx;
-    (void)gy;
-    (void)gz;
+    int16_t raw_gyro[3];
+
+    if (ism330dhcx_angular_rate_raw_get(&dev_ctx, raw_gyro) != 0)
+    {
+        return -1;
+    }
+
+    *gx = raw_gyro[0] * IMU_GYRO_SENSITIVITY_250_MDPS_PER_LSB / MDPS_TO_DPS;
+    *gy = raw_gyro[1] * IMU_GYRO_SENSITIVITY_250_MDPS_PER_LSB / MDPS_TO_DPS;
+    *gz = raw_gyro[2] * IMU_GYRO_SENSITIVITY_250_MDPS_PER_LSB / MDPS_TO_DPS;
 
     return 0;
 }
@@ -102,6 +117,18 @@ int32_t IMU_Init(I2C_HandleTypeDef *hi2c){
 	if (ism330dhcx_xl_full_scale_set(&dev_ctx, ISM330DHCX_2g) != 0)
 	{
 		return -1;
+	}
+
+	if (ism330dhcx_gy_data_rate_set(&dev_ctx,
+	                                ISM330DHCX_GY_ODR_104Hz) != 0)
+	{
+	    return -1;
+	}
+
+	if (ism330dhcx_gy_full_scale_set(&dev_ctx,
+	                                 ISM330DHCX_250dps) != 0)
+	{
+	    return -1;
 	}
 
 	return 0;

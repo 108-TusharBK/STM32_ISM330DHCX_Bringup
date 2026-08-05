@@ -52,7 +52,7 @@ UART_HandleTypeDef huart2;
 
 uint8_t whoamI;
 
-static char uart_buf[64];
+static char uart_buf[128];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,9 +102,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  float ax;
-  float ay;
-  float az;
+  float ax, ay, az;
+  float gx, gy, gz;
 
   if (IMU_Init(&hi2c1) != 0)
   {
@@ -129,11 +128,16 @@ int main(void)
 	      Error_Handler();
 	  }
 
+	  if (IMU_ReadGyro(&gx, &gy, &gz) != 0)
+	  {
+	      Error_Handler();
+	  }
+
 	  sprintf(uart_buf,
-	          "X=%7.3f g  Y=%7.3f g  Z=%7.3f g\r\n",
-	          ax,
-	          ay,
-	          az);
+	          "Acc: X=%7.3f Y=%7.3f Z=%7.3f\r\n"
+	          "Gyr: X=%7.2f Y=%7.2f Z=%7.2f\r\n\r\n",
+	          ax, ay, az,
+	          gx, gy, gz);
 
       HAL_UART_Transmit(&huart2,
                         (uint8_t*)uart_buf,
