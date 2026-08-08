@@ -42,7 +42,7 @@ HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command)
 }
 
 HAL_StatusTypeDef SSD1306_WriteData(
-    uint8_t *data,
+    const uint8_t *data,
     uint16_t size)
 {
 	if (m_hi2c == NULL || (data == NULL) || (size == 0U))
@@ -55,7 +55,7 @@ HAL_StatusTypeDef SSD1306_WriteData(
 			SSD1306_I2C_ADDR,
 			SSD1306_CONTROL_DATA,
 			I2C_MEMADD_SIZE_8BIT,
-			&data,
+			&buffer[0],
 			1,
 			HAL_MAX_DELAY);
 }
