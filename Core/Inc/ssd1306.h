@@ -24,6 +24,7 @@
 #define SSD1306_BUFFER_SIZE \
     ((SSD1306_WIDTH * SSD1306_HEIGHT) / 8U)
 
+
 typedef enum
 {
     SSD1306_COLOR_BLACK = 0,
@@ -34,12 +35,15 @@ bool SSD1306_Init(I2C_HandleTypeDef *hi2c);
 
 HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command);
 
-HAL_StatusTypeDef SSD1306_WriteData(uint8_t *data,
+HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data,
                                     uint16_t size);
 
 HAL_StatusTypeDef SSD1306_UpdateScreen(uint8_t *data);
 
-HAL_StatusTypeDef SSD1306_DrawPixel(I2C_HandleTypeDef *hi2c);
+bool SSD1306_DrawPixel(
+    uint8_t x,
+    uint8_t y,
+    SSD1306_Color_t color);
 
 
 
