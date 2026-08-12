@@ -33,12 +33,15 @@ typedef enum
 
 bool SSD1306_Init(I2C_HandleTypeDef *hi2c);
 
-HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command);
+HAL_StatusTypeDef SSD1306_WriteCommand(
+		uint8_t command,
+		const uint8_t *parameters,
+		uint8_t parameter_count);
 
 HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data,
                                     uint16_t size);
 
-HAL_StatusTypeDef SSD1306_UpdateScreen(uint8_t *data);
+HAL_StatusTypeDef SSD1306_UpdateScreen(void);
 
 bool SSD1306_DrawPixel(
     uint8_t x,
