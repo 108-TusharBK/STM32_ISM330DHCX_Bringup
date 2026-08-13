@@ -6,6 +6,7 @@
  */
 
 #include "ssd1306.h"
+#include <string.h>
 
 #define SSD1306_CONTROL_COMMAND    0x00U
 #define SSD1306_CONTROL_DATA       0x40U
@@ -33,12 +34,25 @@ bool SSD1306_Init(I2C_HandleTypeDef *hi2c)
     // Temporarily use the supplied handle
     m_hi2c = hi2c;
 
+    if (SSD1306_WriteCommand(0xAEU, NULL, 0U) != HAL_OK)
+    {
+    	m_hi2c = NULL;
+    	return false;
+    }
+
     // Perform initialization
     if (SSD1306_WriteCommandWithParam(0x8DU, 0x14U) != HAL_OK)
     {
         m_hi2c = NULL;      // rollback driver state
         return false;
     }
+
+    if (SSD1306_WriteCommandWithParam(0x20U, 0x02U) != HAL_OK)
+    {
+    	m_hi2c = NULL;
+    	return false;
+    }
+
     if (SSD1306_WriteCommandWithParam(0xA8U, 0x3FU) != HAL_OK)
     {
     	m_hi2c = NULL;
@@ -84,11 +98,32 @@ bool SSD1306_Init(I2C_HandleTypeDef *hi2c)
     	m_hi2c = NULL;
     	return false;
     }
-    if (SSD1306_WriteCommandWithParam(0xDAU, 0x02U) != HAL_OK)
+
+    if (SSD1306_WriteCommandWithParam(0xD9U, 0xF1U) != HAL_OK)
     {
     	m_hi2c = NULL;
     	return false;
     }
+    if (SSD1306_WriteCommandWithParam(0xDBU, 0x40U) != HAL_OK)
+    {
+    	m_hi2c = NULL;
+    	return false;
+    }
+
+    if (SSD1306_WriteCommandWithParam(0xDAU, 0x12U) != HAL_OK)
+    {
+    	m_hi2c = NULL;
+    	return false;
+    }
+
+    memset(SSD1306_Buffer, 0x00, sizeof(SSD1306_Buffer));
+
+    if (SSD1306_UpdateScreen() != HAL_OK)
+    {
+        m_hi2c = NULL;
+        return false;
+    }
+
     if (SSD1306_WriteCommand(0xAFU, NULL, 0U) != HAL_OK)
     {
     	m_hi2c = NULL;
@@ -99,51 +134,40 @@ bool SSD1306_Init(I2C_HandleTypeDef *hi2c)
 }
 
 
-
 HAL_StatusTypeDef SSD1306_WriteCommand(
-		uint8_t command,
-		const uint8_t *parameters,
-		uint8_t parameter_count)
+    uint8_t command,
+    const uint8_t *parameters,
+    uint8_t parameter_count)
 {
     if (m_hi2c == NULL)
     {
         return HAL_ERROR;
     }
 
-    HAL_StatusTypeDef status;
-
-    status = HAL_I2C_Mem_Write(
-        m_hi2c,
-        SSD1306_I2C_ADDR,
-		SSD1306_CONTROL_COMMAND,
-        I2C_MEMADD_SIZE_8BIT,
-        &command,
-        1U,
-        HAL_MAX_DELAY);
-
-    if (status != HAL_OK)
+    if ((parameter_count > 0U) && (parameters == NULL))
     {
-          return status;
+        return HAL_ERROR;
     }
+
+    uint8_t command_buffer[1U + UINT8_MAX];
+
+    command_buffer[0] = command;
 
     if (parameter_count > 0U)
     {
-    	 if (parameters == NULL)
-    	 {
-    		 return HAL_ERROR;
-    	 }
-    	 status = HAL_I2C_Mem_Write(
-    			m_hi2c,
-				SSD1306_I2C_ADDR,
-				SSD1306_CONTROL_DATA,
-				I2C_MEMADD_SIZE_8BIT,
-				(uint8_t *)parameters,
-				parameter_count,
-				HAL_MAX_DELAY);
+        memcpy(&command_buffer[1], parameters, parameter_count);
     }
 
-      return status;
+    return HAL_I2C_Mem_Write(
+        m_hi2c,
+        SSD1306_I2C_ADDR,
+        SSD1306_CONTROL_COMMAND,
+        I2C_MEMADD_SIZE_8BIT,
+        command_buffer,
+        1U + parameter_count,
+        HAL_MAX_DELAY);
 }
+
 
 HAL_StatusTypeDef SSD1306_WriteData(
     const uint8_t *data,
@@ -177,7 +201,7 @@ bool SSD1306_DrawPixel(
 
 	uint8_t page = y / 8U;
 	uint8_t bit = y % 8U;
-	uint8_t index = page * SSD1306_WIDTH + x;
+	uint16_t index = page * SSD1306_WIDTH + x;
 
 	if (color == SSD1306_COLOR_WHITE)
 	{

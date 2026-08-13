@@ -21,10 +21,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ism330dhcx_reg.h"
+//#include "ism330dhcx_reg.h"
+#include "ssd1306.h"
 #include <string.h>
 #include <stdio.h>
-#include "imu.h"
+//#include "imu.h"
 
 /* USER CODE END Includes */
 
@@ -50,10 +51,10 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
-uint8_t whoamI;
+//uint8_t whoamI;
 
-static char uart_buf[128];
-#define IMU_OK 0
+
+//#define IMU_OK 0
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,19 +104,21 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  float ax, ay, az;
-  float gx, gy, gz;
-  float tmp;
-
-  if (IMU_Init(&hi2c1) != 0)
+  if (!SSD1306_Init(&hi2c1))
   {
       Error_Handler();
   }
 
-  HAL_UART_Transmit(&huart2,
-                    (uint8_t *)uart_buf,
-                    strlen(uart_buf),
-                    HAL_MAX_DELAY);
+  SSD1306_DrawPixel(0U,   0U,  SSD1306_COLOR_WHITE);
+  SSD1306_DrawPixel(127U, 0U,  SSD1306_COLOR_WHITE);
+  SSD1306_DrawPixel(0U,   63U, SSD1306_COLOR_WHITE);
+  SSD1306_DrawPixel(127U, 63U, SSD1306_COLOR_WHITE);
+
+
+  if (SSD1306_UpdateScreen() != HAL_OK)
+  {
+      Error_Handler();
+  }
 
 
   /* USER CODE END 2 */
@@ -125,34 +128,7 @@ int main(void)
   while (1)
   {
 
-	  if (IMU_ReadAccel(&ax, &ay, &az) != IMU_OK)
-	  {
-	      printf("Accel read error!");
-	  }
 
-	  if (IMU_ReadGyro(&gx, &gy, &gz) != IMU_OK)
-	  {
-		  printf("Gyro read error!");
-	  }
-
-	  if (IMU_ReadTemperature(&tmp) != IMU_OK)
-	  {
-		  printf("Temp read error!");
-	  }
-
-	  sprintf(uart_buf,
-	          "ACCL: X=%7.3f Y=%7.3f Z=%7.3f\r\n\r\n"
-	          "GYRO: X=%7.2f Y=%7.2f Z=%7.2f\r\n\r\n"
-			  "TEMP: %.2f\r\n\r\n",
-	          ax, ay, az,
-	          gx, gy, gz, tmp);
-
-      HAL_UART_Transmit(&huart2,
-                        (uint8_t*)uart_buf,
-                        strlen(uart_buf),
-                        HAL_MAX_DELAY);
-
-      HAL_Delay(200);
   }
     /* USER CODE END WHILE */
 
