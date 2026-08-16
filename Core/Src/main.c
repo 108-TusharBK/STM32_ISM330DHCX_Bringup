@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 //#include "ism330dhcx_reg.h"
 #include "ssd1306.h"
+#include "sd_spi.h"
 #include <string.h>
 #include <stdio.h>
 //#include "imu.h"
@@ -108,21 +109,6 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  if (!SSD1306_Init(&hi2c1))
-  {
-      Error_Handler();
-  }
-
-  SSD1306_DrawPixel(0U,   0U,  SSD1306_COLOR_WHITE);
-  SSD1306_DrawPixel(127U, 0U,  SSD1306_COLOR_WHITE);
-  SSD1306_DrawPixel(0U,   63U, SSD1306_COLOR_WHITE);
-  SSD1306_DrawPixel(127U, 63U, SSD1306_COLOR_WHITE);
-
-
-  if (SSD1306_UpdateScreen() != HAL_OK)
-  {
-      Error_Handler();
-  }
 
 
   /* USER CODE END 2 */

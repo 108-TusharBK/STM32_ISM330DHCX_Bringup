@@ -9,6 +9,11 @@
 #define INC_SD_SPI_H_
 
 #include "main.h"
+#include <stdint.h>
+#include <stddef.h>
+
+#define SD_SPI_TIMEOUT_MS    100U
+#define SD_DUMMY_BYTE        0xFFU
 
 typedef enum
 {
